@@ -54,8 +54,20 @@ def parentILP2Graph(
     graph["var_nodes"].x = torch.tensor(var_nodes).float()
     x_list = torch.tensor(sub_opt_sol_list)
     x_tilde = x_list.sum(axis = 1).min()    # The best feasible solution so far
+
+
+
+
+
+
+    ## Mean or sum????
     graph["var_nodes"].denominator = torch.exp(-x_list.sum(axis = 1) / x_tilde).sum()
     graph["var_nodes"].ILP = ILP_name
+
+
+
+
+    
 
     # Constraint nodes
     graph["constr_nodes"].x = torch.tensor(constr_nodes).float()
