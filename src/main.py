@@ -65,10 +65,10 @@ if __name__ == '__main__':
 
 
 
-    
+
 
     # Define loss function and optimizer
-    criterion = {"children": nn.BCEWithLogitsLoss(),
+    criterion = {"children": nn.BCEWithLogitsLoss(pos_weight = 0.1),
                  "parents": weightedBCEWithLogitsLoss()}
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
