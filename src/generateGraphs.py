@@ -7,7 +7,6 @@ import shutil
 import gurobipy as gp
 import torch
 from torch_geometric.data import HeteroData
-from torch_geometric.transforms import ToUndirected
 from GraphDataset import GraphDataset
 
 def parentILP2Graph(
@@ -27,14 +26,7 @@ def parentILP2Graph(
     ILP_path = os.path.realpath(os.path.join(ILP_dir, f"./{ILP_name}"))
     ILP = gp.read(ILP_path)
 
-    # Variable nodes, feature vector = [c, p(x), random feature]
-    var_nodes = [[1, 0.5, random.uniform(0, 1)] for _ in range(ILP.NumVars)]
-
-    # Constrain nodes,
-    # feature vector = [RHS, "=", ">", "<", ">=", "<=", random feature]
-    constr_nodes = [[constr.RHS, 0, 0, 0, 1, 0, random.uniform(0, 1)] for constr in ILP.getConstrs()]
-
-    # Edges
+    ## Edges: same for all graphs since they are from the same parent ILP
     edges = []
     constr_idx_map = {constr: idx for idx, constr in enumerate(ILP.getConstrs())}
     for node_idx, node in enumerate(ILP.getVars()):
@@ -43,38 +35,54 @@ def parentILP2Graph(
             constr = coeffs.getConstr(idx)
             constr_idx = constr_idx_map[constr]
             edges.append([node_idx, constr_idx])
-
     # Edge features: TBD
     edge_attr = [[1] for _ in range(len(edges))]
 
-    ## Assemble the graph
-    graph = HeteroData()
+    # Loop over all sub-optimal solutions
+    for sub_opt_sol in sub_opt_sol_list:
+        # Variable nodes, feature vector = [c, sub_opt + random number, random feature]
+        var_nodes = []
+        for idx in range(len(sub_opt_sol)):
+            if sub_opt_sol[idx] > 0.5:
+                var_nodes.append([1, 1 - random.uniform(0, 0.2), random.uniform(0, 1)])
+            else:
+                var_nodes.append([1, 0 + random.uniform(0, 0.2), random.uniform(0, 1)])
 
-    # Variable nodes
-    graph["var_nodes"].x = torch.tensor(var_nodes).float()
-    graph["var_nodes"].mask = torch.ones(ILP.NumVars).bool()
-    x_list = torch.tensor(sub_opt_sol_list)
-    best_obj_found = x_list.sum(axis = 1).min()    # The best feasible solution so far
+        # Constrain nodes,
+        # feature vector = [RHS, "=", ">", "<", ">=", "<=", random feature]
+        constr_nodes = [[constr.RHS, 0, 0, 0, 1, 0, random.uniform(0, 1)] for constr in ILP.getConstrs()]
 
-    ## Mean or sum????
-    graph["var_nodes"].best_obj_found = torch.tensor(best_obj_found)
-    graph["var_nodes"].dividend = torch.exp(-x_list.sum(axis = 1) / best_obj_found).mean()
-    graph["var_nodes"].ILP = ILP_name
+        ## Assemble the graph
+        graph = HeteroData()
 
-    # Constraint nodes
-    graph["constr_nodes"].x = torch.tensor(constr_nodes).float()
+        # Graph name
+        graph["name"].ILP = ILP_name
 
-    # Edges
-    edge_index = torch.tensor(edges).long().t().contiguous()
-    graph["var_nodes", "in", "constr_nodes"].edge_index = edge_index
-    graph["var_nodes", "in", "constr_nodes"].edge_attr = torch.tensor(edge_attr).float()
+        # Variable nodes
+        graph["var_nodes"].x = torch.tensor(var_nodes).float()
+        graph["var_nodes"].x_sub_opt = torch.tensor(sub_opt_sol).float()
+        graph["var_nodes"].mask = torch.ones(len(sub_opt_sol)).bool()
+        graph["var_nodes"].prob_divisor = torch.exp(
+            -torch.tensor(sub_opt_sol).sum() / torch.tensor(sub_opt_sol_list).sum(axis = 1).min())
+        ## Mean or sum???
+        graph["var_nodes"].prob_dividend = torch.sum(
+            torch.exp(-torch.tensor(sub_opt_sol_list).sum(axis = 1) / torch.tensor(sub_opt_sol_list).sum(axis = 1).min()))
+        graph["var_nodes"].prob = graph["var_nodes"].prob_divisor / graph["var_nodes"].prob_dividend
 
-    graph["constr_nodes", "rev_in", "var_nodes"].edge_index = edge_index.flip(dims=(0,))
-    graph["constr_nodes", "rev_in", "var_nodes"].edge_attr = torch.tensor(edge_attr).float()
+        # Constraint nodes
+        graph["constr_nodes"].x = torch.tensor(constr_nodes).float()
+
+        # Edges
+        edge_index = torch.tensor(edges).long().t().contiguous()
+        graph["var_nodes", "in", "constr_nodes"].edge_index = edge_index
+        graph["var_nodes", "in", "constr_nodes"].edge_attr = torch.tensor(edge_attr).float()
+
+        graph["constr_nodes", "rev_in", "var_nodes"].edge_index = edge_index.flip(dims=(0,))
+        graph["constr_nodes", "rev_in", "var_nodes"].edge_attr = torch.tensor(edge_attr).float()
 
 
-    ## Collect the graph
-    graph_list.append(graph)
+        ## Collect the graph
+        graph_list.append(graph)
 
     return
 
@@ -325,21 +333,21 @@ if __name__ == "__main__":
         **vars(args))
     
 
-    ## Children ILP to graph
-    children_ILPs_dir = f"./../instances/training/children/"
-    children_ILPs = os.listdir(children_ILPs_dir)
-    mps_types = ["SC", "SP", "MIS", "MVC", "CA"]
-    children_ILPs = [var for var in children_ILPs 
-                     if var[:3].replace("_", "") in mps_types]
-    parent_ILPs = [item.split("_", 2)[0] + "_" +item.split("_", 2)[1] 
-                   for item in children_ILPs]
-    # Sort the list so that they are in the same order 
-    # for differene toperating systems
-    children_ILPs.sort()
-    graph_list = []
-    generateChildrenGraphDataset(
-        children_ILPs_dir = children_ILPs_dir,
-        children_ILPs = children_ILPs,
-        parent_ILPs = parent_ILPs,
-        graph_list = graph_list,
-        **vars(args))
+    # ## Children ILP to graph
+    # children_ILPs_dir = f"./../instances/training/children/"
+    # children_ILPs = os.listdir(children_ILPs_dir)
+    # mps_types = ["SC", "SP", "MIS", "MVC", "CA"]
+    # children_ILPs = [var for var in children_ILPs 
+    #                  if var[:3].replace("_", "") in mps_types]
+    # parent_ILPs = [item.split("_", 2)[0] + "_" +item.split("_", 2)[1] 
+    #                for item in children_ILPs]
+    # # Sort the list so that they are in the same order 
+    # # for differene toperating systems
+    # children_ILPs.sort()
+    # graph_list = []
+    # generateChildrenGraphDataset(
+    #     children_ILPs_dir = children_ILPs_dir,
+    #     children_ILPs = children_ILPs,
+    #     parent_ILPs = parent_ILPs,
+    #     graph_list = graph_list,
+    #     **vars(args))

@@ -2,7 +2,9 @@ import torch
 
 # Training function
 # Training function
-def train(model, children_loader, parents_loader, children_criterion, parents_criterion, optimizer, device):
+def train(model, children_loader, 
+          parents_loader, children_criterion, 
+          parents_criterion, optimizer, device):
     """
     Function to train the model sequentially: first on children ILPs, then on parent ILPs,
     using different loss functions for each phase.
