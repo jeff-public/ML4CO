@@ -21,18 +21,18 @@ def parentILP2Graph(
         raise ValueError("\nNo input ILPs\n")
     
     # Set random seed
-    random.seed(10)
+    random.seed(random_seed)
 
     # Load ILP problem
     ILP_path = os.path.realpath(os.path.join(ILP_dir, f"./{ILP_name}"))
     ILP = gp.read(ILP_path)
 
-    # Variable nodes, feature vector = [p(x) = 1, random number]
-    var_nodes = [[0.5, random.uniform(0, 1)] for _ in range(ILP.NumVars)]
+    # Variable nodes, feature vector = [c, p(x), random feature]
+    var_nodes = [[1, 0.5, random.uniform(0, 1)] for _ in range(ILP.NumVars)]
 
     # Constrain nodes,
-    # feature vector = [RHS, "=", ">", "<", ">=", "<="]
-    constr_nodes = [[constr.RHS, 0, 0, 0, 1, 0] for constr in ILP.getConstrs()]
+    # feature vector = [RHS, "=", ">", "<", ">=", "<=", random feature]
+    constr_nodes = [[constr.RHS, 0, 0, 0, 1, 0, random.uniform(0, 1)] for constr in ILP.getConstrs()]
 
     # Edges
     edges = []
@@ -52,22 +52,14 @@ def parentILP2Graph(
 
     # Variable nodes
     graph["var_nodes"].x = torch.tensor(var_nodes).float()
+    graph["var_nodes"].mask = torch.ones(ILP.NumVars).bool()
     x_list = torch.tensor(sub_opt_sol_list)
-    x_tilde = x_list.sum(axis = 1).min()    # The best feasible solution so far
-
-
-
-
-
+    best_obj_found = x_list.sum(axis = 1).min()    # The best feasible solution so far
 
     ## Mean or sum????
-    graph["var_nodes"].denominator = torch.exp(-x_list.sum(axis = 1) / x_tilde).sum()
+    graph["var_nodes"].best_obj_found = torch.tensor(best_obj_found)
+    graph["var_nodes"].dividend = torch.exp(-x_list.sum(axis = 1) / best_obj_found).mean()
     graph["var_nodes"].ILP = ILP_name
-
-
-
-
-    
 
     # Constraint nodes
     graph["constr_nodes"].x = torch.tensor(constr_nodes).float()
@@ -147,7 +139,7 @@ def childrenILP2Graph(
     #     raise ValueError("\nEmpty or wrong input.\n")
 
     # Set random seed
-    random.seed(10)
+    random.seed(random_seed)
     
     # Number of graphs
     num_graphs = len(sub_opt_sol)
@@ -157,15 +149,15 @@ def childrenILP2Graph(
 
     # Create individual graph
     for i in range(num_graphs):        
-        # Variable nodes, feature vector = [p(x) = 1, random value]
+        # Variable nodes, feature vector = [c, p(x), random feature]
         var_nodes = []
         for var in range(num_vars):
             if var not in assigned_vars_index[i]:
                 # Unassigned variable x = 0.5
-                var_nodes.append([0.5, random.uniform(0, 1)])
+                var_nodes.append([1, 0.5, random.uniform(0, 1)])
             else:
                 # Assigned variable x = 1 (ONLY IN THIS CASE)
-                var_nodes.append([1, random.uniform(0, 1)])
+                var_nodes.append([1, 1, random.uniform(0, 1)])
 
         # # Constraint nodes, feature vector = [RHS, "=", ">", "<", ">=", "<="]
         # constr_nodes = []
@@ -178,8 +170,8 @@ def childrenILP2Graph(
         #     edges.append([[k, j] for k in var_nodes if k in vars_in_constrs[i]])
 
 
-        # Constraint nodes, feature vector = [RHS, "=", ">", "<", ">=", "<="]
-        constr_nodes = [[1, 0, 0, 0, 1, 0] for _ in range(parent_mps.NumConstrs)]
+        # Constraint nodes, feature vector = [RHS, "=", ">", "<", ">=", "<=", random feature]
+        constr_nodes = [[1, 0, 0, 0, 1, 0, random.uniform(0, 1)] for _ in range(parent_mps.NumConstrs)]
 
         # Edges
         edges = []

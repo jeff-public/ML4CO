@@ -62,39 +62,51 @@ if __name__ == '__main__':
         edge_attr_dim=1
     ).to(device)
 
-
-
-
-
-
     # Define loss function and optimizer
     criterion = {"children": nn.BCEWithLogitsLoss(pos_weight = 0.1),
                  "parents": weightedBCEWithLogitsLoss()}
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 
-
-
-
-
-
-
-
-
-    # Training loop
-    num_epochs = 100
+    ## Training and validation
+    num_epochs = 10
     train_loss = []
     val_loss = []
     for epoch in range(1, num_epochs + 1):
-        train_loss.append(train(model, train_loader, optimizer, criterion, device))
-        val_loss.append(validate(model, val_loader, criterion, device))
-        print(f"Epoch: {epoch:02d}, "
-              f"Train Loss: {train_loss[epoch-1]:.4f}, "
-               f"Val Loss: {val_loss[epoch-1]:.4f}")
+        losses = train(model = model, children_loader = children_loader, 
+                       parents_loader = parents_loader, 
+                       children_criterion = criterion["children"],
+                       parents_criterion = criterion["parents"],
+                       optimizer = optimizer, device = device)
+        train_loss.append(losses[0])
+        val_loss.append(losses[1])
+        print(f"Epoch: {epoch:02d}, Train Loss: {losses[0]:.4f}, Val Loss: {losses[1]:.4f}")
+
+
+
+
+
+
+
+
+
+    # ## Testing 
+    # with torch.no_grad():
+    #     for data in test_loader:
+    #         data = data.to(device)
+    #         out = model(data)
+    #         loss = criterion(out[data["var_nodes"].mask],
+    #                          data['var_nodes'].y[data["var_nodes"].mask])
+    #         total_loss += loss.item() * data['var_nodes'].num_nodes
+
         
+
+
+
+
     # Save the model
     torch.save(model, "./../models/InterleavedGCNN.pt")
-        
+    
 
     # Save loss plot
     plt.figure(figsize=(4, 3))

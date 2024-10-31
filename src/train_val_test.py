@@ -22,18 +22,18 @@ def train(model, children_loader, parents_loader, children_criterion, parents_cr
     """
     # Phase I: Train on children ILPs with children-specific loss function
     avg_children_loss = train_on_data(
-        model, children_loader, optimizer, children_criterion, device, phase='children'
+        model, children_loader, optimizer, children_criterion, device
     )
     
     # Phase II: Train on parent ILPs with parent-specific loss function
     avg_parents_loss = train_on_data(
-        model, parents_loader, optimizer, parents_criterion, device, phase='parents'
+        model, parents_loader, optimizer, parents_criterion, device
     )
     
     return avg_children_loss, avg_parents_loss
 
 
-def train_on_data(model, loader, optimizer, criterion, device, phase):
+def train_on_data(model, loader, optimizer, criterion, device):
     """
     Generic training loop for a given dataset (children or parent ILPs),
     using a specified loss function.
@@ -68,7 +68,6 @@ def train_on_data(model, loader, optimizer, criterion, device, phase):
 
     avg_loss = total_loss / len(loader.dataset)  # Calculate average loss
 
-    print(f"Phase: {phase} - Average Loss: {avg_loss:.4f}")  # Log the loss for each phase
     return avg_loss
 
 

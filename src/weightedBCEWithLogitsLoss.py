@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-def weightedBCEWithLogitsLoss(y_pred, y_true, y_tilde, weight_base):
+def weightedBCEWithLogitsLoss(y_pred, y_true, best_obj_found, dividend):
     """
     Custom BCEWithLogitsLoss with an overall weight multiplier.
     
@@ -20,7 +20,7 @@ def weightedBCEWithLogitsLoss(y_pred, y_true, y_tilde, weight_base):
     unweighted_loss = criterion(y_pred, y_true)
 
     # Compute weight
-    weight = torch.exp(-torch.sum(y_pred) / torch.sum(y_tilde)) / weight_base
+    weight = torch.exp(-torch.sum(y_pred) / best_obj_found) / dividend
     
     # Apply overall weight
     weighted_loss = weight * unweighted_loss
