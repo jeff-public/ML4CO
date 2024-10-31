@@ -32,7 +32,8 @@ class InterleavedGCNN(nn.Module):
             nn.Linear(hidden_channels, hidden_channels),
             nn.LeakyReLU(0.2),
             nn.Dropout(0.2),
-            nn.Linear(hidden_channels, 1)
+            nn.Linear(hidden_channels, 1),
+            nn.Sigmoid()
         )
 
     def forward(self, data):

@@ -7,7 +7,7 @@ import torch.nn as nn
 from torch_geometric.loader import DataLoader
 from GraphDataset import GraphDataset
 from InterleavedGCNN import InterleavedGCNN
-from weightedBCEWithLogitsLoss import weightedBCEWithLogitsLoss
+from parentBCELoss import weightedBCEWithLogitsLoss
 
 from train_val_test import train, validate, test
 

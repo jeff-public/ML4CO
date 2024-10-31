@@ -23,19 +23,21 @@ def train(model, children_loader,
     - avg_parents_loss: Average loss for parent ILPs.
     """
     # Phase I: Train on children ILPs with children-specific loss function
-    avg_children_loss = train_on_data(
-        model, children_loader, optimizer, children_criterion, device
-    )
+    avg_children_loss = None
+    if children_loader:
+        avg_children_loss = train_on_children_data(
+            model, children_loader, optimizer, children_criterion, device)
     
     # Phase II: Train on parent ILPs with parent-specific loss function
-    avg_parents_loss = train_on_data(
-        model, parents_loader, optimizer, parents_criterion, device
-    )
+    avg_parents_loss = None
+    if parents_loader:
+        avg_parents_loss = train_on_parents_data(
+            model, parents_loader, optimizer, parents_criterion, device)
     
     return avg_children_loss, avg_parents_loss
 
 
-def train_on_data(model, loader, optimizer, criterion, device):
+def train_on_children_data(model, loader, optimizer, criterion, device):
     """
     Generic training loop for a given dataset (children or parent ILPs),
     using a specified loss function.
@@ -73,7 +75,51 @@ def train_on_data(model, loader, optimizer, criterion, device):
     return avg_loss
 
 
+def train_on_parents_data(model, loader, optimizer, criterion, device):
+    """
+    Generic training loop for a given dataset (children or parent ILPs),
+    using a specified loss function.
+    
+    Args:
+    - model: PyTorch model to train.
+    - loader: DataLoader for ILPs (children or parents).
+    - optimizer: Optimizer for training.
+    - criterion: Loss function for the specific phase.
+    - device: Device to use for training (CPU/GPU).
+    - phase: 'children' or 'parents', indicating the training phase.
+    
+    Returns:
+    - avg_loss: Average loss over the dataset.
+    """
+    model.train()  # Set model to training mode
+    total_loss = 0  # Initialize total loss
 
+    for data in loader:
+        data = data.to(device)  # Move data to the specified device
+        optimizer.zero_grad()   # Reset gradients
+
+        # Forward pass and compute loss
+        out = model(data)
+
+
+        print(out)
+        print(out.shape)
+        print(data["var_nodes"].prob.shape)
+
+
+
+        loss = criterion(torch.prod(out),
+                         data['var_nodes'].prob,
+                         loader.batch_size)
+
+        loss.backward()   # Backpropagation
+        optimizer.step()  # Update model weights
+
+        total_loss += loss.item() * data['var_nodes'].num_nodes  # Accumulate loss
+
+    avg_loss = total_loss / len(loader.dataset)  # Calculate average loss
+
+    return avg_loss
 
 
 
@@ -88,6 +134,7 @@ def validate(model, loader, criterion, device):
                              data['var_nodes'].y[data["var_nodes"].mask])
             total_loss += loss.item() * data['var_nodes'].num_nodes
     return total_loss / len(loader.dataset)
+
 
 
 
