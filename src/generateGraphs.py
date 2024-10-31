@@ -155,9 +155,21 @@ def childrenILP2Graph(
     # Number of variables
     num_vars = parent_mps.NumVars
 
+    ## Edges: same for all instances from the same parent ILP
+    edges = []
+    constr_idx_map = {constr: idx for idx, constr in enumerate(parent_mps.getConstrs())}
+    for var_idx, var in enumerate(parent_mps.getVars()):
+        coeffs = parent_mps.getCol(var)
+        for idx in range(coeffs.size()):
+            constr = coeffs.getConstr(idx)
+            constr_idx = constr_idx_map[constr]
+            edges.append([var_idx, constr_idx])
+    # Edge features: TBD
+    edge_attr = [[1] for _ in range(len(edges))]
+
     # Create individual graph
     for i in range(num_graphs):        
-        # Variable nodes, feature vector = [c, p(x), random feature]
+        # Variable nodes, feature vector = [c, p(x) + random numebr, random feature]
         var_nodes = []
         for var in range(num_vars):
             if var not in assigned_vars_index[i]:
@@ -165,7 +177,7 @@ def childrenILP2Graph(
                 var_nodes.append([1, 0.5, random.uniform(0, 1)])
             else:
                 # Assigned variable x = 1 (ONLY IN THIS CASE)
-                var_nodes.append([1, 1, random.uniform(0, 1)])
+                var_nodes.append([1, 1 - random.uniform(0, 0.2), random.uniform(0, 1)])
 
         # # Constraint nodes, feature vector = [RHS, "=", ">", "<", ">=", "<="]
         # constr_nodes = []
@@ -181,27 +193,17 @@ def childrenILP2Graph(
         # Constraint nodes, feature vector = [RHS, "=", ">", "<", ">=", "<=", random feature]
         constr_nodes = [[1, 0, 0, 0, 1, 0, random.uniform(0, 1)] for _ in range(parent_mps.NumConstrs)]
 
-        # Edges
-        edges = []
-        constr_idx_map = {constr: idx for idx, constr in enumerate(parent_mps.getConstrs())}
-        for var_idx, var in enumerate(parent_mps.getVars()):
-            coeffs = parent_mps.getCol(var)
-            for idx in range(coeffs.size()):
-                constr = coeffs.getConstr(idx)
-                constr_idx = constr_idx_map[constr]
-                edges.append([var_idx, constr_idx])
-        # Edge features: TBD
-        edge_attr = [[1] for _ in range(len(edges))]
-
         ## Assemble the graph
         graph = HeteroData()
+
+        # Graph name
+        graph["name"] = children_ILP
 
         # Variable nodes
         graph["var_nodes"].x = torch.tensor(var_nodes).float()
         graph["var_nodes"].y = torch.tensor(sub_opt_sol[i]).float()
-        graph["var_nodes"].mask = ~torch.isin(torch.arange(num_vars), 
-                                              torch.tensor(assigned_vars_index[i]))
-        graph["var_nodes"].ILP = children_ILP
+        graph["var_nodes"].mask = ~torch.isin(torch.arange(num_vars).float(), 
+                                              torch.tensor(assigned_vars_index[i]).float())
         
         # Constraint nodes
         graph["constr_nodes"].x = torch.tensor(constr_nodes).float()
@@ -321,33 +323,33 @@ if __name__ == "__main__":
     print(f"\n\nYour input is:\n {vars(args)}\n\n")
     
     ## Parent ILP to graph
-    parent_ILPs_dir = f"./../instances/training/parents/"
-    parent_ILPs = os.listdir(parent_ILPs_dir)
-    parent_ILPs = [var for var in parent_ILPs if var[-4:] == ".mps"]
-    parent_ILPs.sort()
-    graph_list = []
-    generateParentGraphDataset(
-        parent_ILPs_dir = parent_ILPs_dir,
-        parent_ILPs = parent_ILPs,
-        graph_list = graph_list,
-        **vars(args))
-    
-
-    # ## Children ILP to graph
-    # children_ILPs_dir = f"./../instances/training/children/"
-    # children_ILPs = os.listdir(children_ILPs_dir)
-    # mps_types = ["SC", "SP", "MIS", "MVC", "CA"]
-    # children_ILPs = [var for var in children_ILPs 
-    #                  if var[:3].replace("_", "") in mps_types]
-    # parent_ILPs = [item.split("_", 2)[0] + "_" +item.split("_", 2)[1] 
-    #                for item in children_ILPs]
-    # # Sort the list so that they are in the same order 
-    # # for differene toperating systems
-    # children_ILPs.sort()
+    # parent_ILPs_dir = f"./../instances/training/parents/"
+    # parent_ILPs = os.listdir(parent_ILPs_dir)
+    # parent_ILPs = [var for var in parent_ILPs if var[-4:] == ".mps"]
+    # parent_ILPs.sort()
     # graph_list = []
-    # generateChildrenGraphDataset(
-    #     children_ILPs_dir = children_ILPs_dir,
-    #     children_ILPs = children_ILPs,
+    # generateParentGraphDataset(
+    #     parent_ILPs_dir = parent_ILPs_dir,
     #     parent_ILPs = parent_ILPs,
     #     graph_list = graph_list,
     #     **vars(args))
+    
+
+    ## Children ILP to graph
+    children_ILPs_dir = f"./../instances/training/children/"
+    children_ILPs = os.listdir(children_ILPs_dir)
+    mps_types = ["SC", "SP", "MIS", "MVC", "CA"]
+    children_ILPs = [var for var in children_ILPs 
+                     if var[:3].replace("_", "") in mps_types]
+    parent_ILPs = [item.split("_", 2)[0] + "_" +item.split("_", 2)[1] 
+                   for item in children_ILPs]
+    # Sort the list so that they are in the same order 
+    # for differene toperating systems
+    children_ILPs.sort()
+    graph_list = []
+    generateChildrenGraphDataset(
+        children_ILPs_dir = children_ILPs_dir,
+        children_ILPs = children_ILPs,
+        parent_ILPs = parent_ILPs,
+        graph_list = graph_list,
+        **vars(args))
