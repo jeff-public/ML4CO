@@ -100,17 +100,8 @@ def train_on_parents_data(model, loader, optimizer, criterion, device):
 
         # Forward pass and compute loss
         out = model(data)
-
-
-        print(out)
-        print(out.shape)
-        print(data["var_nodes"].prob.shape)
-
-
-
-        loss = criterion(torch.prod(out),
-                         data['var_nodes'].prob,
-                         loader.batch_size)
+        loss = criterion(out[data["var_nodes"].mask],
+                         data['var_nodes'].y[data["var_nodes"].mask])
 
         loss.backward()   # Backpropagation
         optimizer.step()  # Update model weights
