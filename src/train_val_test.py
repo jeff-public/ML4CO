@@ -122,7 +122,7 @@ def validate(model, loader, criterion, device):
             data = data.to(device)
             out = model(data)
             loss = criterion(out[data["var_nodes"].mask],
-                             data['var_nodes'].y[data["var_nodes"].mask])
+                             data['var_nodes'].x_sub_opt[data["var_nodes"].mask])
             total_loss += loss.item() * data['var_nodes'].num_nodes
     return total_loss / len(loader.dataset)
 
