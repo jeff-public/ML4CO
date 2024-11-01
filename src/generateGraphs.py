@@ -60,7 +60,7 @@ def parentILP2Graph(
 
         # Variable nodes
         graph["var_nodes"].x = torch.tensor(var_nodes).float()
-        graph["var_nodes"].x_sub_opt = torch.tensor(sub_opt_sol).float()
+        graph["var_nodes"].x_sub_opt = torch.tensor(sub_opt_sol).float().clamp(0, 1)
         graph["var_nodes"].mask = torch.ones(len(sub_opt_sol)).bool()
         graph["var_nodes"].prob_divisor = torch.exp(
             -torch.tensor(sub_opt_sol).sum() / torch.tensor(sub_opt_sol_list).sum(axis = 1).min())
@@ -201,7 +201,7 @@ def childrenILP2Graph(
 
         # Variable nodes
         graph["var_nodes"].x = torch.tensor(var_nodes).float()
-        graph["var_nodes"].y = torch.tensor(sub_opt_sol[i]).float()
+        graph["var_nodes"].y = torch.tensor(sub_opt_sol[i]).float().clamp(0, 1)
         graph["var_nodes"].mask = ~torch.isin(torch.arange(num_vars).float(), 
                                               torch.tensor(assigned_vars_index[i]).float())
         
@@ -322,17 +322,17 @@ if __name__ == "__main__":
     args = parseArgs()
     print(f"\n\nYour input is:\n {vars(args)}\n\n")
     
-    ## Parent ILP to graph
-    # parent_ILPs_dir = f"./../instances/training/parents/"
-    # parent_ILPs = os.listdir(parent_ILPs_dir)
-    # parent_ILPs = [var for var in parent_ILPs if var[-4:] == ".mps"]
-    # parent_ILPs.sort()
-    # graph_list = []
-    # generateParentGraphDataset(
-    #     parent_ILPs_dir = parent_ILPs_dir,
-    #     parent_ILPs = parent_ILPs,
-    #     graph_list = graph_list,
-    #     **vars(args))
+    # Parent ILP to graph
+    parent_ILPs_dir = f"./../instances/training/parents/"
+    parent_ILPs = os.listdir(parent_ILPs_dir)
+    parent_ILPs = [var for var in parent_ILPs if var[-4:] == ".mps"]
+    parent_ILPs.sort()
+    graph_list = []
+    generateParentGraphDataset(
+        parent_ILPs_dir = parent_ILPs_dir,
+        parent_ILPs = parent_ILPs,
+        graph_list = graph_list,
+        **vars(args))
     
 
     ## Children ILP to graph
