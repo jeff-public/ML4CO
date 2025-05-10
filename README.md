@@ -18,7 +18,16 @@ This repository provides a complete pipeline for learning the structure of MILP 
 
 ## 📁 Repository Structure
 
-<pre> ``` ML4CO/ ├── dataset/ # Raw and processed data ├── instances/ # MILP instances for testing ├── models/ # Saved model checkpoints and configs ├── src/ # Source code (training, evaluation, utilities) ├── .gitattributes # Git metadata settings └── README.md # Project overview and usage guide ``` </pre>
+<pre> 
+``` ML4CO/ 
+├── dataset/ # Raw and processed data 
+├── instances/ # MILP instances for testing 
+├── models/ # Saved model checkpoints and configs 
+├── src/ # Source code (training, evaluation, utilities) 
+├── .gitattributes # Git metadata settings 
+└── README.md # Project overview and usage guide 
+``` 
+</pre>
 
 
 ---
