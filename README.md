@@ -9,7 +9,7 @@
 This repository provides a complete pipeline for learning the structure of MILP decision spaces using machine learning techniques. It integrates data preprocessing, instance generation, model training, and evaluation on real and synthetic benchmarks.
 
 <p align="center">
-  <img src="assets/illustration.png" width="600"/>
+  <img src="assets/illustration.png"/>
 </p>
 
 *Figure 1: Overview of the proposed framework.*
