@@ -70,11 +70,11 @@ python src/main.py
 ```bash
 
 @misc{your_project2024,
-  author       = {Your Name and Collaborators},
-  title        = {Learning Decision Space Structures for MILP Solving},
-  year         = {2024},
+  author       = {Yadong Zhang, Pranav M Karve, Sankaran Mahadevan},
+  title        = {Learning Decision Space Structure for Efficient Solution of Mixed-Integer Linear Programs},
+  year         = {2025},
   howpublished = {GitHub},
-  url          = {https://github.com/yourusername/your-repo}
+  url          = {https://github.com/jeff-public/ML4CO}
 }
 
 ```
