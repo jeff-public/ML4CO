@@ -1,6 +1,71 @@
-# ML4CO
-ML for CO
+<!-- # 🔧 Project Title -->
 
-#### For myself
-1. In the Phase I ttraining, use "pos_weight: since there tends to be more 0 than 1
-2. In the Phase II training, use custom weight, but one weight for the whole prediction, or individual weight for each element in the prediction (The second case need assumption of independence, may not hold?). 
+## Learning Decision Space Structure for Efficient Solution of Mixed-Integer Linear Programs
+
+---
+
+## 📖 Introduction
+
+This repository provides a complete pipeline for learning the structure of MILP decision spaces using machine learning techniques. It integrates data preprocessing, instance generation, model training, and evaluation on real and synthetic benchmarks.
+
+<p align="center">
+  <img src="assets/illustration.png" width="600"/>
+</p>
+
+*Figure 1: Overview of the proposed framework.*
+
+---
+
+## 📁 Repository Structure
+
+<pre> ``` ML4CO/ ├── dataset/ # Raw and processed data ├── instances/ # MILP instances for testing ├── models/ # Saved model checkpoints and configs ├── src/ # Source code (training, evaluation, utilities) ├── .gitattributes # Git metadata settings └── README.md # Project overview and usage guide ``` </pre>
+
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/ML4OPT/DS_MILP.git
+cd DS_MILP
+
+
+conda create -n [YOUR-ENV] python=3.10
+conda activate [YOUR-ENV]
+pip install -r requirements.txt
+```
+
+### 2. Generate data
+```bash
+
+python src/generateParentILPs.py
+python src/generateCHildrenILPs.py
+
+```
+
+
+### 3. Run experiments
+```bash
+
+python src/main.py
+
+```
+
+
+---
+
+
+### Citr our work
+
+```bash
+
+@misc{your_project2024,
+  author       = {Your Name and Collaborators},
+  title        = {Learning Decision Space Structures for MILP Solving},
+  year         = {2024},
+  howpublished = {GitHub},
+  url          = {https://github.com/yourusername/your-repo}
+}
+
+```
